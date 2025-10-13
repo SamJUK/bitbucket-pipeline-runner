@@ -1,6 +1,12 @@
 # Bitbucket Pipeline Runner
 
-Self contained dockerized Bitbucket Pipeline Runner based from https://testdriven.io/blog/github-actions-docker/
+This project handles wrapping the standard Bitbucket Pipeline Runner with registration and cleanup logic.
+
+Adding the ability for simple manual and autoscaling via Docker / Docker Swarm without having to deploy the [official Kubernetes solution](https://bitbucket.org/bitbucketpipelines/runners-autoscaler/src/master/)
+
+A sibling project with the same approach for Github Action Runners can be found at https://github.com/SamJUK/github-actions-runner
+
+Based from https://testdriven.io/blog/github-actions-docker/
 
 ## Usage
 
@@ -28,15 +34,24 @@ docker run -e WORKSPACE=acme -e AUTH_USER=user@example.com -e AUTH_PWD=xxxx \
     samjuk/bitbucket-pipeline-runner:latest
 ```
 
-### Docker Compose
+### Docker Compose / Docker Swarm
 ```yaml
 services:
-  runner:
+  bitbucket-runner:
     image: samjuk/bitbucket-pipeline-runner:latest
+    replicas: 2
     environment:
       WORKSPACE: acme
       AUTH_USER: user@example.com
       AUTH_PWD: xxxx
+```
+Scaling can be achieved by modifying the manifest or via the CLI
+```sh
+# Compose
+docker compose scale bitbucket-runner=3
+
+# Swarm
+docker service scale ci-runners_bitbucket-runner=3
 ```
 
 ### K8s
