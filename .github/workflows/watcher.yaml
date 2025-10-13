@@ -1,0 +1,75 @@
+name: Watch for new Bitbucket Runner versions
+
+concurrency:
+  group: watcher
+  cancel-in-progress: true
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '30 5 * * *'
+
+jobs:
+  watch:
+    name: Watcher
+    runs-on: ubuntu-latest
+    outputs:
+      missing_tags: ${{ steps.missing_tags.outputs.tags }}
+    steps:
+      - uses: actions/checkout@v5
+      - name: Gather Missing Tags
+        id: missing_tags
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          # Exclude specific versions that are known to be problematic or unsupported (missing base image etc)
+          EXCLUDED_TAGS: |
+            2.2.0
+            3.2.0
+            3.3.0
+            3.4.0
+            3.5.0
+            3.9.0
+            3.12.0
+            3.13.0
+            3.14.0
+            3.17.0
+            3.18.0
+            3.21.0
+            3.26.0
+            3.29.0
+            3.30.0
+        run: |
+          set +e
+          RUNNER_VERSIONS=$(curl -s https://product-downloads.atlassian.com/software/bitbucket/pipelines/CHANGELOG.md | grep -E "^## " | sed 's/^## //g' | sort -V)
+          EXISTING_TAGS=$(git ls-remote --tags origin | awk -F'/' '{print $3}' | sed 's/\^{}//g' | sort -V)
+          MISSING_TAGS=$(grep -vxf <(echo -e "$EXISTING_TAGS") <(echo -e "$RUNNER_VERSIONS") | sort -V)
+          FINAL_MISSING_TAGS=$(grep -vxf <(echo -e "$EXCLUDED_TAGS") <(echo -e "$MISSING_TAGS") | jq -R | jq --slurp | jq -rc)
+
+          echo "Runner Versions: $RUNNER_VERSIONS" | tr "\n" " "
+          echo ""
+          echo "Existing Tags: $EXISTING_TAGS" | tr "\n" " "
+          echo ""
+          echo "Missing Tags: $MISSING_TAGS" | tr "\n" " "
+          echo ""
+          echo "Excluded Tags: $EXCLUDED_TAGS" | tr "\n" " "
+          echo ""
+          echo "Final Missing Tags (after exclusions): $FINAL_MISSING_TAGS" | tr "\n" " "
+
+          echo "tags=$FINAL_MISSING_TAGS" >> "$GITHUB_OUTPUT"
+          
+  release:
+    needs: [watch]
+    name: Release
+    if: needs.watch.outputs.missing_tags != '[]'
+    permissions: write-all
+    strategy:
+      fail-fast: false
+      matrix:
+        tag: ${{ fromJSON(needs.watch.outputs.missing_tags) }}
+    uses: ./.github/workflows/release.yaml
+    with:
+      version: ${{ matrix.tag }}
+    secrets:
+      DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+      DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
