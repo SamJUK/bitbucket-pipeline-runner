@@ -16,7 +16,7 @@ jobs:
     outputs:
       missing_tags: ${{ steps.missing_tags.outputs.tags }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - name: Gather Missing Tags
         id: missing_tags
         shell: bash
