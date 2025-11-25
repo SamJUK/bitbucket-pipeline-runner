@@ -5,6 +5,7 @@ updates:
     schedule:
       interval: "weekly"
       time: '06:00'
+      day: 'monday'
     cooldown:
       default-days: 7
     reviewers:
