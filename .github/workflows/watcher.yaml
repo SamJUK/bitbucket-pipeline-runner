@@ -43,7 +43,7 @@ jobs:
             5.5.0
         run: |
           set +e
-          RUNNER_VERSIONS=$(curl -s https://product-downloads.atlassian.com/software/bitbucket/pipelines/CHANGELOG.md | grep -E "^## " | sed 's/^## //g' | sort -V)
+          RUNNER_VERSIONS=$(curl -s https://product-downloads.atlassian.com/software/bitbucket/pipelines/CHANGELOG.md | grep -E "^## " | sed 's/^## //g' | sort -V | awk '{print $1}')
           EXISTING_TAGS=$(git ls-remote --tags origin | awk -F'/' '{print $3}' | sed 's/\^{}//g' | sort -V)
           MISSING_TAGS=$(grep -vxf <(echo -e "$EXISTING_TAGS") <(echo -e "$RUNNER_VERSIONS") | sort -V)
           FINAL_MISSING_TAGS=$(grep -vxf <(echo -e "$EXCLUDED_TAGS") <(echo -e "$MISSING_TAGS") | jq -R | jq --slurp | jq -rc)
