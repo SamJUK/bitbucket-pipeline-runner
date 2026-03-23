@@ -8,6 +8,10 @@ updates:
       day: 'monday'
     cooldown:
       default-days: 7
+    groups:
+      all-actions:
+        patterns:
+          - "*"
     reviewers:
       - "SamJUK"
     assignees:
