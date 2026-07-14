@@ -12,11 +12,6 @@ build_auth_header() {
 }
 
 main() {
-    WORKSPACE=$WORKSPACE
-    AUTH_TOKEN=$AUTH_TOKEN
-    AUTH_USER=$AUTH_USER
-    AUTH_PWD=$AUTH_PWD
-
     [ -z "$WORKSPACE" ] && echo "[!] Missing WORKSPACE" && exit 1
 
     if ! AUTH_HEADER=$(build_auth_header "$AUTH_TOKEN" "$AUTH_USER" "$AUTH_PWD"); then
@@ -28,13 +23,14 @@ main() {
     ACC_DATA=$(curl -s -H "Authorization: ${AUTH_HEADER}" -H "Content-Type: application/json" "https://api.bitbucket.org/2.0/user")
     REG_DATA=$(curl -s -X POST -H "Authorization: ${AUTH_HEADER}" -H "Content-Type: application/json" \
         --data "$(jq -n --arg name "bitbucket-runner-$(uuidgen | cut -c1-8)" '$ARGS.named')" \
-        https://api.bitbucket.org/internal/workspaces/$WORKSPACE/pipelines-config/runners)
+        "https://api.bitbucket.org/internal/workspaces/$WORKSPACE/pipelines-config/runners")
 
-    export ACCOUNT_UUID=$(echo "$ACC_DATA" | jq -r .uuid)
-    export RUNNER_UUID=$(echo "$REG_DATA" | jq -r .uuid)
-    export RUNNER_NAME=$(echo "$REG_DATA" | jq -r .name)
-    export OAUTH_CLIENT_ID=$(echo "$REG_DATA" | jq -r ".oauth_client .id")
-    export OAUTH_CLIENT_SECRET=$(echo "$REG_DATA" | jq -r ".oauth_client .secret")
+    ACCOUNT_UUID=$(echo "$ACC_DATA" | jq -r .uuid)
+    RUNNER_UUID=$(echo "$REG_DATA" | jq -r .uuid)
+    RUNNER_NAME=$(echo "$REG_DATA" | jq -r .name)
+    OAUTH_CLIENT_ID=$(echo "$REG_DATA" | jq -r ".oauth_client .id")
+    OAUTH_CLIENT_SECRET=$(echo "$REG_DATA" | jq -r ".oauth_client .secret")
+    export ACCOUNT_UUID RUNNER_UUID RUNNER_NAME OAUTH_CLIENT_ID OAUTH_CLIENT_SECRET
 
     echo "==============================="
     echo "Registered new Bitbucket Runner"
@@ -46,12 +42,12 @@ main() {
     echo "Runner OAuth Secret: ${OAUTH_CLIENT_SECRET}"
     echo "==============================="
 
-    cd /opt/atlassian/pipelines/runner
+    cd /opt/atlassian/pipelines/runner || exit 1
 
     cleanup() {
         echo "Removing runner..."
         curl -sX DELETE -H "Authorization: ${AUTH_HEADER}" -H "Content-Type: application/json" \
-            "https://api.bitbucket.org/internal/workspaces/$WORKSPACE/pipelines-config/runners/\{$(echo $RUNNER_UUID | tr -d "{}")\}"
+            "https://api.bitbucket.org/internal/workspaces/$WORKSPACE/pipelines-config/runners/\{$(echo "$RUNNER_UUID" | tr -d "{}")\}"
     }
 
     trap 'cleanup; exit 130' INT
