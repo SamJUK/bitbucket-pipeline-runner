@@ -43,6 +43,7 @@ jobs:
             5.5.0
             5.8.0
             6.0.3
+            6.0.5
         run: |
           set +e
           RUNNER_VERSIONS=$(curl -s https://product-downloads.atlassian.com/software/bitbucket/pipelines/CHANGELOG.md | grep -E "^## " | sed 's/^## //g' | sort -V | awk '{print $1}')
