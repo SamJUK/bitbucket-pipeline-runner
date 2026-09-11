@@ -28,6 +28,7 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v6
 
@@ -41,6 +42,7 @@ jobs:
   build-docker-image:
     needs: test
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     permissions: write-all
     env:
       IMAGE_NAME: samjuk/bitbucket-pipelines-runner
@@ -87,6 +89,7 @@ jobs:
   create-release:
     needs: build-docker-image
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     permissions: write-all
     env:
       IMAGE_NAME: samjuk/bitbucket-pipelines-runner
